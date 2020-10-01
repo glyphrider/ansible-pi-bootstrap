@@ -87,10 +87,21 @@
       set_fact:
         ansible_user: root
         ansible_ssh_pass: "{{ temporary_root_password }}"
+        remote_user: root
     - name: Test for pi user
       command: id pi
       register: check_for_pi_user
       ignore_errors: true
+    - name: Kill all processes for pi user
+      shell: "pkill -u pi"
+      ignore_errors: true
+      when: check_for_pi_user is succeeded
+    - name: Get process list
+      shell: /bin/ps -ef
+      register: ps_result
+    - debug:
+        var: ps_result
+        verbosity: 2
     - name: Transition pi to brian
       command: usermod -l brian -d /home/brian -m pi
       when: check_for_pi_user is succeeded
