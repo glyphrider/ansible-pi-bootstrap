@@ -51,6 +51,13 @@
         path: /etc/hosts
         regex: ^127\.0\.1\.1
         line: "127.0.1.1         {{ inventory_hostname }}"
+
+    - name: update root password
+      user:
+        name: root
+        password:  "{{ temporary_root_password | password_hash('sha512') }}"
+      become: yes
+
     - name: Flush Handlers before Reboot
       meta: flush_handlers
     - name: Confirm Pi
@@ -72,11 +79,33 @@
       reboot:
 
 
-- name: Phase3
+- name: Bootstrap new Raspberry Pi (zero-w) -- Phase 2
   hosts: pi_zero
-  remote_user: brian
 
   tasks:
+    - name: Shift to root user
+      set_fact:
+        ansible_user: root
+        ansible_ssh_pass: "{{ temporary_root_password }}"
+    - name: Test for pi user
+      command: id pi
+      register: check_for_pi_user
+      ignore_errors: true
+    - name: Transition pi to brian
+      command: usermod -l brian -d /home/brian -m pi
+      when: check_for_pi_user is succeeded
+    - name: Transition user pi to brian
+      command: groupmod -n brian pi
+      when: check_for_pi_user is succeeded
+
+- name: Bootstrap new Raspberry Pi (zero-w) -- Phase 3
+  hosts: pi_zero
+
+  tasks:
+    - name: Shift to root brian
+      set_fact:
+        ansible_user: brian
+        ansible_ssh_pass:
     - name: Disable Password Authentication for SSH
       become: yes
       lineinfile:
