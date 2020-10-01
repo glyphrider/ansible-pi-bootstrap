@@ -1,0 +1,9 @@
+---
+- hosts: pi_zero
+  tasks:
+   - name: Install Emacs (no-x variant)
+     apt: pkg=emacs-nox state=present update_cache=true
+     become: yes
+   - name : Install VI Improved (vim)
+     apt: pkg=vim state=present update_cache=true
+     become: yes
