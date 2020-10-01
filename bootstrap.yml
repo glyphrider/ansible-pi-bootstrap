@@ -1,0 +1,104 @@
+---
+- name: Bootstrap new Raspberry Pi (zero-w) -- Phase 1
+  hosts: pi_zero
+  remote_user: pi
+
+  tasks:
+    - name: Enable en_US.UTF-8 Locale
+      become: yes
+      lineinfile:
+        path: "/etc/locale.gen"
+        regex: ^(# *)?en_US\.UTF-8
+        line: en_US.UTF-8 UTF-8
+        state: present
+        backrefs: yes
+      notify:
+        - "locale configuration change"
+        - Reboot
+    - name: Set default locale en_US.UTF-8
+      become: yes
+      lineinfile:
+        path: "/etc/default/locale"
+        regex: ^\s*LANG=
+        line: LANG=en_US.UTF-8
+        state: present
+        backrefs: yes
+      notify: Reboot
+    - name: Enable Password Authentication for SSH
+      become: yes
+      lineinfile:
+        path: "/etc/ssh/sshd_config"
+        regex: ^(# *)?PasswordAuthentication
+        line: PasswordAuthentication yes
+      notify: "sshd configuration change"
+    - name: Enable Root Authentication for SSH
+      become: yes
+      lineinfile:
+        path: "/etc/ssh/sshd_config"
+        regex: ^(# *)?PermitRootLogin
+        line: PermitRootLogin yes
+      notify: "sshd configuration change"
+    - name: Update /etc/hostname
+      become: yes
+      lineinfile:
+        path: /etc/hostname
+        regex: ^raspberrypi$
+        line: "{{ inventory_hostname }}"
+      notify: Reboot
+    - name: Update /etc/hosts
+      become: yes
+      lineinfile:
+        path: /etc/hosts
+        regex: ^127\.0\.1\.1
+        line: "127.0.1.1         {{ inventory_hostname }}"
+    - name: Flush Handlers before Reboot
+      meta: flush_handlers
+    - name: Confirm Pi
+      ping:
+
+  handlers:
+    - name: Restart SSH Service
+      become: yes
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      listen: "sshd configuration change"
+    - name: Generate Locales
+      command: /usr/sbin/locale-gen
+      become: yes
+      listen: "locale configuration change"
+    - name: Reboot
+      become: yes
+      reboot:
+
+
+- name: Phase3
+  hosts: pi_zero
+  remote_user: brian
+
+  tasks:
+    - name: Disable Password Authentication for SSH
+      become: yes
+      lineinfile:
+        path: "/etc/ssh/sshd_config"
+        regex: ^(# *)?PasswordAuthentication
+        line: PasswordAuthentication no
+        state: present
+        backrefs: yes
+      notify: "sshd configuration change"
+    - name: Disable Root Authentication for SSH
+      become: yes
+      lineinfile:
+        path: "/etc/ssh/sshd_config"
+        regex: ^(# *)?PermitRootLogin
+        line: PermitRootLogin no
+        state: present
+        backrefs: yes
+      notify: "sshd configuration change"
+  handlers:
+    - name: Restart SSH Service
+      become: yes
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      listen: "sshd configuration change"
