@@ -1,11 +1,11 @@
 ---
-- name: Bootstrap new Raspberry Pi (zero-w) -- Phase 1
+- name: Bootstrap new Raspberry Pi (zero-w)
   hosts: pi_zero
   remote_user: pi
+  become: yes
 
   tasks:
     - name: Enable en_US.UTF-8 Locale
-      become: yes
       lineinfile:
         path: "/etc/locale.gen"
         regex: ^(# *)?en_US\.UTF-8
@@ -16,7 +16,6 @@
         - "locale configuration change"
         - Reboot
     - name: Set default locale en_US.UTF-8
-      become: yes
       lineinfile:
         path: "/etc/default/locale"
         regex: ^\s*LANG=
@@ -24,61 +23,8 @@
         state: present
         backrefs: yes
       notify: Reboot
-    - name: Enable Password Authentication for SSH
-      become: yes
-      lineinfile:
-        path: "/etc/ssh/sshd_config"
-        regex: ^(# *)?PasswordAuthentication
-        line: PasswordAuthentication yes
-      notify: "sshd configuration change"
-    - name: Enable Root Authentication for SSH
-      become: yes
-      lineinfile:
-        path: "/etc/ssh/sshd_config"
-        regex: ^(# *)?PermitRootLogin
-        line: PermitRootLogin yes
-      notify: "sshd configuration change"
-    - name: Update /etc/hostname
-      become: yes
-      lineinfile:
-        path: /etc/hostname
-        regex: ^raspberrypi$
-        line: "{{ inventory_hostname }}"
-      notify: Reboot
-    - name: Update /etc/hosts
-      become: yes
-      lineinfile:
-        path: /etc/hosts
-        regex: ^127\.0\.1\.1
-        line: "127.0.1.1         {{ inventory_hostname }}"
-    - name: Flush Handlers before Reboot
-      meta: flush_handlers
-    - name: Confirm Pi
-      ping:
 
-  handlers:
-    - name: Restart SSH Service
-      become: yes
-      ansible.builtin.service:
-        name: sshd
-        state: restarted
-      listen: "sshd configuration change"
-    - name: Generate Locales
-      command: /usr/sbin/locale-gen
-      become: yes
-      listen: "locale configuration change"
-    - name: Reboot
-      become: yes
-      reboot:
-
-
-- name: Phase3
-  hosts: pi_zero
-  remote_user: brian
-
-  tasks:
     - name: Disable Password Authentication for SSH
-      become: yes
       lineinfile:
         path: "/etc/ssh/sshd_config"
         regex: ^(# *)?PasswordAuthentication
@@ -86,19 +32,88 @@
         state: present
         backrefs: yes
       notify: "sshd configuration change"
-    - name: Disable Root Authentication for SSH
-      become: yes
+
+    - name: Update /etc/hostname
       lineinfile:
-        path: "/etc/ssh/sshd_config"
-        regex: ^(# *)?PermitRootLogin
-        line: PermitRootLogin no
-        state: present
-        backrefs: yes
-      notify: "sshd configuration change"
+        path: /etc/hostname
+        regex: ^raspberrypi$
+        line: "{{ inventory_hostname }}"
+      notify: Reboot
+    - name: Update /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regex: ^127\.0\.1\.1
+        line: "127.0.1.1         {{ inventory_hostname }}"
+
+    - name: Flush Handlers
+      meta: flush_handlers
+
+    - name: Remove non-systemd netowkring packages
+      apt:
+        state: absent
+        pkg:
+          - dhcpcd5
+          - fake-hwclock
+          - ifupdown
+          - isc-dhcp-client
+          - isc-dhcp-common
+          - openresolv
+        purge: yes
+    - name: Create network configuration file
+      copy:
+        dest: /etc/systemd/network/10-wlan0.network
+        src: 10-wlan0.network
+    - name: Enable systemd-networkd
+      service: 
+        name: systemd-networkd
+        enabled: yes
+      notify: Reboot
+    - name: Link resolv.conf
+      file:
+        src: /run/systemd/resolve/resolv.conf
+        dest: /etc/resolv.conf
+        state: link
+        force: yes
+    - name: Enable systemd-resolved
+      service: 
+        name: systemd-resolved
+        enabled: yes
+      notify: Reboot
+    - name: Enable systemd-timesyncd
+      service: 
+        name: systemd-timesyncd
+        enabled: yes
+      notify: Reboot
+    - name: Look for original wpa_supplicant.conf
+      stat:
+        path: /etc/wpa_supplicant/wpa_supplicant.conf
+      register: wpa_supplicant
+    - name: Hard link to wpa_supplicant.conf
+      file:
+        src: /etc/wpa_supplicant/wpa_supplicant.conf
+        dest: /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+        state: hard
+      when: wpa_supplicant.stat.exists
+    - name: Remove original wpa_supplicant.conf
+      file:
+        path: /etc/wpa_supplicant/wpa_supplicant.conf
+        state: absent
+      when: wpa_supplicant.stat.exists
+    - name: Enable wpa_supplicant@wlan0
+      service: 
+        name: wpa_supplicant@wlan0
+        enabled: yes
+      notify: Reboot
+  
   handlers:
     - name: Restart SSH Service
-      become: yes
       ansible.builtin.service:
         name: sshd
         state: restarted
       listen: "sshd configuration change"
+    - name: Generate Locales
+      command: /usr/sbin/locale-gen
+      listen: "locale configuration change"
+    - name: Reboot
+      reboot:
+
