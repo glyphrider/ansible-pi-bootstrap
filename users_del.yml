@@ -1,0 +1,19 @@
+---
+- name: Delete users
+  hosts: pi_zero
+  remote_user: pi
+  become: yes
+
+  tasks:
+    - name: Load userlist from csv
+      read_csv:
+        path: users_to_delete.list
+        fieldnames: id
+      register: users
+      delegate_to: localhost
+    - name: Delete user
+      user:
+        name: "{{ item }}"
+        state: absent
+        remove: yes
+      loop: "{{ lookup('file','./users_to_delete.list').splitlines() }}"

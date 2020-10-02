@@ -1,17 +1,29 @@
 ---
-- name: Install a new user
+- name: Install users
   hosts: pi_zero
   remote_user: pi
   become: yes
 
   tasks:
+    - name: Load userlist from csv
+      read_csv:
+        path: users.csv
+      register: users
+      delegate_to: localhost
     - name: Create user
       user:
-        name: brian
+        name: "{{ user.id }}"
+        comment: "{{ user.gecos }}"
         groups: sudo
+      loop: "{{ users.list }}"
+      loop_control:
+        loop_var: user
     - name: Set authorized key from local ansible.pub
       authorized_key:
-        user: brian
+        user: "{{ user.id }}"
         state: present
-        key: https://github.com/glyphrider.keys
+        key: "https://github.com/{{ user.github }}.keys"
         exclusive: yes
+      loop: "{{ users.list }}"
+      loop_control:
+        loop_var: user
