@@ -1,0 +1,17 @@
+---
+- name: Install a new user
+  hosts: pi_zero
+  remote_user: pi
+  become: yes
+
+  tasks:
+    - name: Create user
+      user:
+        name: brian
+        groups: sudo
+    - name: Set authorized key from local ansible.pub
+      authorized_key:
+        user: brian
+        state: present
+        key: https://github.com/glyphrider.keys
+        exclusive: yes

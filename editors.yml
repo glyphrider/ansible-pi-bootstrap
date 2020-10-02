@@ -5,9 +5,14 @@
   become: yes
 
   tasks:
-   - name: Install Emacs (no-x variant)
-     apt: pkg=emacs-nox state=present update_cache=true
-     become: yes
-   - name : Install VI Improved (vim)
-     apt: pkg=vim state=present update_cache=true
-     become: yes
+    - name: apt-get update
+      apt:
+        update_cache: yes
+    - name: apt-get install emacs-nox
+      apt:
+        name: emacs-nox
+        state: present
+    - name : apt-get install vim
+      apt:
+        name: vim
+        state: present

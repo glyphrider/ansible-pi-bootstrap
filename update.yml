@@ -1,0 +1,23 @@
+---
+- name: Update Raspberry Pi OS
+  hosts: pi_zero
+  remote_user: pi
+  become: yes
+
+  tasks:
+    - name: apt-get update
+      apt:
+        update_cache: yes
+    - name: apt-get upgrade
+      apt:
+        name: "*"
+        state: latest
+    - name: apt-get full-upgrade
+      apt:
+        upgrade: full
+      notify: reboot
+
+  handlers:
+    - name: Theraputic reboot....
+      listen: reboot
+      reboot:
