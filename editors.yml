@@ -1,5 +1,9 @@
 ---
-- hosts: pi_zero
+- name: Install standard editors for headless operation
+  hosts: pi_zero
+  remote_user: pi
+  become: yes
+
   tasks:
    - name: Install Emacs (no-x variant)
      apt: pkg=emacs-nox state=present update_cache=true
