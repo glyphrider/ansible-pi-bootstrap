@@ -1,0 +1,66 @@
+---
+- name: Remove non-systemd netowkring packages
+  apt:
+    state: absent
+    pkg:
+      - dhcpcd5
+      - fake-hwclock
+      - ifupdown
+      - isc-dhcp-client
+      - isc-dhcp-common
+      - openresolv
+    purge: yes
+  become: yes
+- name: Create network configuration file
+  copy:
+    dest: /etc/systemd/network/10-wlan0.network
+    src: 10-wlan0.network
+  become: yes
+- name: Enable systemd-networkd
+  service: 
+    name: systemd-networkd
+    enabled: yes
+  notify: reboot
+  become: yes
+- name: Link resolv.conf
+  file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: yes
+  become: yes
+- name: Enable systemd-resolved
+  service: 
+    name: systemd-resolved
+    enabled: yes
+  become: yes
+  notify: reboot
+- name: Enable systemd-timesyncd
+  service: 
+    name: systemd-timesyncd
+    enabled: yes
+  become: yes
+  notify: reboot
+- name: Look for original wpa_supplicant.conf
+  stat:
+    path: /etc/wpa_supplicant/wpa_supplicant.conf
+  register: wpa_supplicant
+- name: Hard link to wpa_supplicant.conf
+  file:
+    src: /etc/wpa_supplicant/wpa_supplicant.conf
+    dest: /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+    state: hard
+  become: yes
+  when: wpa_supplicant.stat.exists
+- name: Remove original wpa_supplicant.conf
+  file:
+    path: /etc/wpa_supplicant/wpa_supplicant.conf
+    state: absent
+  become: yes
+  when: wpa_supplicant.stat.exists
+- name: Enable wpa_supplicant@wlan0
+  service: 
+    name: wpa_supplicant@wlan0
+    enabled: yes
+  become: yes
+  notify: reboot

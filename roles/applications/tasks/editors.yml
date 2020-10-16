@@ -1,0 +1,11 @@
+---
+- name: apt-get install emacs-nox
+  apt:
+    name: emacs-nox
+    state: present
+  become: yes
+- name : apt-get install vim
+  apt:
+    name: vim
+    state: present
+  become: yes

@@ -1,6 +1,14 @@
 ---
+##
+## This play can only be run once. Afterwards, it will fail because it alters
+## the ssh connection method (from password to public key).
+##
+## Requires password auth, since ssh keys have yet to be installed.
+##
+## ansible-playbook -i inventory.yml ssh-key-bootstrap.yml -e "ansible_ssh_pass=raspberry"
+##
 - name: Bootstrap new Raspberry Pi (zero-w)
-  hosts: pi_zero
+  hosts: all
   remote_user: pi
   become: yes
 

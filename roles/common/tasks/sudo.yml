@@ -1,0 +1,9 @@
+---
+- name: Update sudo rules to not require a password
+  lineinfile:
+    path: /etc/sudoers
+    regex: ^%sudo
+    line: "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL"
+    state: present
+    backrefs: yes
+  become: yes

@@ -1,0 +1,43 @@
+---
+- name: Enable en_US.UTF-8 Locale
+  lineinfile:
+    path: "/etc/locale.gen"
+    regex: ^(# *)?en_US\.UTF-8
+    line: en_US.UTF-8 UTF-8
+    state: present
+    backrefs: yes
+  notify:
+    - "locale configuration change"
+    - Reboot
+- name: Set default locale en_US.UTF-8
+  lineinfile:
+    path: "/etc/default/locale"
+    regex: ^\s*LANG=
+    line: LANG=en_US.UTF-8
+    state: present
+    backrefs: yes
+  notify: Reboot
+
+- name: Disable Password Authentication for SSH
+  lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regex: ^(# *)?PasswordAuthentication
+    line: PasswordAuthentication no
+    state: present
+    backrefs: yes
+  notify: "sshd configuration change"
+
+- name: Update /etc/hostname
+  lineinfile:
+    path: /etc/hostname
+    regex: ^raspberrypi$
+    line: "{{ inventory_hostname }}"
+  notify: Reboot
+- name: Update /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regex: ^127\.0\.1\.1
+    line: "127.0.1.1         {{ inventory_hostname }}"
+
+- name: Flush Handlers
+  meta: flush_handlers

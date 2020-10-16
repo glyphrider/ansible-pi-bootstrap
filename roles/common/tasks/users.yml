@@ -1,0 +1,33 @@
+---
+- name: Load userlist from csv
+  read_csv:
+    path: users.csv
+  register: users
+  delegate_to: localhost
+- name: Create user
+  user:
+    name: "{{ user.id }}"
+    comment: "{{ user.gecos }}"
+    groups: sudo
+  become: yes
+  loop: "{{ users.list }}"
+  loop_control:
+    loop_var: user
+- name: Set authorized key from local github
+  authorized_key:
+    user: "{{ user.id }}"
+    state: present
+    key: "https://github.com/{{ user.github }}.keys"
+    exclusive: yes
+  become: yes
+  loop: "{{ users.list }}"
+  loop_control:
+    loop_var: user
+
+- name: Delete user
+  user:
+    name: "{{ item }}"
+    state: absent
+    remove: yes
+  become: yes
+  loop: "{{ lookup('file','./users_to_delete.list').splitlines() }}"
