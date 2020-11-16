@@ -6,6 +6,7 @@
     line: en_US.UTF-8 UTF-8
     state: present
     backrefs: yes
+  become: yes
   notify:
     - "locale configuration change"
     - Reboot
@@ -16,6 +17,7 @@
     line: LANG=en_US.UTF-8
     state: present
     backrefs: yes
+  become: yes
   notify: Reboot
 
 - name: Disable Password Authentication for SSH
@@ -25,19 +27,22 @@
     line: PasswordAuthentication no
     state: present
     backrefs: yes
-  notify: "sshd configuration change"
+  become: yes
+  notify: "sshd_restart"
 
 - name: Update /etc/hostname
   lineinfile:
     path: /etc/hostname
     regex: ^raspberrypi$
     line: "{{ inventory_hostname }}"
+  become: yes
   notify: Reboot
 - name: Update /etc/hosts
   lineinfile:
     path: /etc/hosts
     regex: ^127\.0\.1\.1
     line: "127.0.1.1         {{ inventory_hostname }}"
+  become: yes
 
 - name: Flush Handlers
   meta: flush_handlers

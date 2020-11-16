@@ -64,3 +64,5 @@
     enabled: yes
   become: yes
   notify: reboot
+- name: force reboot, if necessary
+  meta: flush_handlers
