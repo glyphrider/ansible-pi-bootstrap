@@ -1,0 +1,27 @@
+---
+- name: Install Raspberry Pi OS Xserver
+  apt:
+    name: xserver-xorg
+    state: present
+  become: yes
+
+- name: Install XFCE Desktop
+  apt:
+    name:
+      - xfce4
+      - xfce4-terminal
+    state: present
+  become: yes
+
+- name: Install LightDM Desktop Manger
+  apt:
+    name: lightdm
+    state: present
+  become: yes
+
+- name: Start LightDM
+  service:
+    name: lightdm
+    state: started
+    enabled: yes
+  become: yes

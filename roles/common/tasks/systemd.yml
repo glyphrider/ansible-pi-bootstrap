@@ -11,11 +11,18 @@
       - openresolv
     purge: yes
   become: yes
-- name: Create network configuration file
+- name: Create eth0 network configuration file
+  copy:
+    dest: /etc/systemd/network/10-eth0.network
+    src: 10-eth0.network
+  become: yes
+  when: wired | bool
+- name: Create wlan0 network configuration file
   copy:
     dest: /etc/systemd/network/10-wlan0.network
     src: 10-wlan0.network
   become: yes
+  when: wireless | bool
 - name: Enable systemd-networkd
   service: 
     name: systemd-networkd
