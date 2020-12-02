@@ -19,10 +19,10 @@ The following stuff needs to be setup before any of this Ansible magic will work
 ### The Process
 
 1. Update the inventory.yml file to include a new entry for your Pi with the correct IP address. See the example file below.
-2. Run the special (one-time) playbook to copy the ssh key onto the new Pi, and disable password authentication. This will make the Pi accessible **only** via ssh using the new ansible automation key pair. Run `ansible-playbook -i inventory.yml ssh-key-bootstrap.yml -e "ansible_ssh_pass=raspberry"` to execute that playbook. If you look into ssh-key-bootstrap.yml you'll see that there are two tasks: the first attaches your new key to the pi account by updating the authorized_keys file, and the second restricts access to the pi account by locking the password. The Raspberry Pi OS comes bundled with a `sudo` configuration to allow the pi user to perform super-user tasks.
+2. Run the special (one-time) playbook to copy the ssh key onto the new Pi, and disable password authentication. This will make the Pi accessible **only** via ssh using the new ansible automation key pair. Run `ansible-playbook ssh-key-bootstrap.yml -e "ansible_ssh_pass=raspberry"` to execute that playbook. If you look into ssh-key-bootstrap.yml you'll see that there are two tasks: the first attaches your new key to the pi account by updating the authorized_keys file, and the second restricts access to the pi account by locking the password. The Raspberry Pi OS comes bundled with a `sudo` configuration to allow the pi user to perform super-user tasks.
 3. Double-check the site.yml file to make sure your my has the expected roles associated with it, either based on its hostname, group, or _all_. The common role contains all the things *I* like to put on a Pi; the applications role installs `vim` and `emacs` (the -nox version).
 4. Add the ansible keypair to your ssh-agent with `ssh-add ansible`.
-5. Run the site playbook to process all the appropriate roles to your pi with `ansible-playbook -i inventory.yml site.yml`.
+5. Run the site playbook to process all the appropriate roles to your pi with `ansible-playbook site.yml`.
 
 ### The Common Role
 

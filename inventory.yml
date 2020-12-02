@@ -7,8 +7,6 @@ all:
       ansible_host: 192.168.47.131
     white:
       ansible_host: 192.168.47.138
-#    pitop:
-#      ansible_host: 192.168.47.132
     touch:
       ansible_host: 192.168.47.133
   children:
